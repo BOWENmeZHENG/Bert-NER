@@ -40,7 +40,7 @@ def to_batches(x, batch_size):
     return [x[batch_size * y: batch_size * (y+1),:] for y in range(num_batches)]
 
 def accuracy(index_other, index_pad, y_pred, y):
-    indices = ((index_other < y) & (y < index_pad)).nonzero(as_tuple=True)  # words with entity
+    indices = (y < index_pad).nonzero(as_tuple=True)
     _, predicted_classes = y_pred[indices[0], :, indices[1]].max(dim=1)
     true_classes = y[indices[0], indices[1]]
     accuracy = torch.eq(predicted_classes, true_classes).sum() / true_classes.shape[0]
