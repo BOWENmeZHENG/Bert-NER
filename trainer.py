@@ -102,4 +102,5 @@ def testing(model, json_file, classes, tokenizer, max_length):
         y_pred_test = model(data_test, attention_mask=att_mask_test)
         y_pred_test = torch.swapaxes(y_pred_test, 1, 2)
         acc_test, predicted_classes, true_classes = ut.accuracy(0, len(classes), y_pred_test, target_test)
+        # print(len(predicted_classes), len(true_classes))
     return acc_test, predicted_classes, true_classes, y_pred_test, target_test, data_list
