@@ -26,6 +26,7 @@ def annotate(para, class_list, name=None):
             categories.append(class_list[int(c)])
         except:
             c = input(f"What's the category for '{word}'? ")
+            categories.append(class_list[int(c)])
         if (i + 1) % 10 == 0:
             print()
             print(' '.join(word_list[i:]))
