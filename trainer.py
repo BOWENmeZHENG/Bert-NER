@@ -53,7 +53,7 @@ def train(model, tokenizer, train_json, test_json, classes,
         if test_json != None:
             acc_test, pred_classes, true_classes, pred_all, true_all, data_list = testing(model, test_json, classes, tokenizer, max_length)
             test_accuracies.append(acc_test)
-            print(f'Test accuracy: {acc_test:.4f}')
+            print(f'Mean test accuracy: {acc_test:.4f}')
         print('\n')
         train_losses.append(train_loss_batch_mean)
         train_accuracies.append(train_accuracy_batch_mean)
