@@ -58,9 +58,16 @@ def train(model, tokenizer, train_json, test_json, classes,
         train_losses.append(train_loss_batch_mean)
         train_accuracies.append(train_accuracy_batch_mean)
 
+        model_name = f'{folder}/{folder}_e_{epoch}'
         if save_model:             
-            model_name = f'{folder}/{folder}_e_{epoch}'
             torch.save(model.state_dict(), f"saved_models/{model_name}.pt")
+        for sample_id, d in enumerate(data_list):
+            words_test = d['words']
+            labels_test = true_all[sample_id][:len(words_test)].tolist()
+            pred_test = pred_all[sample_id, :, :].max(dim=0)[1][:len(words_test)].tolist()
+            data_test_dict = {'words': words_test, 'labels': labels_test, 'pred': pred_test}
+            with open(f"saved_models/{model_name}_test_{sample_id}.json", 'w') as f_test:
+                json.dump(data_test_dict, f_test)
 
     if save_results:
         train_losses_np = np.array(train_losses)
@@ -69,13 +76,7 @@ def train(model, tokenizer, train_json, test_json, classes,
             test_accuracies_np = np.array(test_accuracies)
             data = np.vstack((train_losses_np, train_accuracies_np, test_accuracies_np)).T
             data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy', 'test_accuracy'])
-            for sample_id, d in enumerate(data_list):
-                words_test = d['words']
-                labels_test = true_all[sample_id][:len(words_test)].tolist()
-                pred_test = pred_all[sample_id, :, :].max(dim=0)[1][:len(words_test)].tolist()
-                data_test_dict = {'words': words_test, 'labels': labels_test, 'pred': pred_test}
-                with open(f"saved_models/{model_name}_test_{sample_id}.json", 'w') as f_test:
-                    json.dump(data_test_dict, f_test)
+            
         else:
             data = np.vstack((train_losses_np, train_accuracies_np)).T
             data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy'])
