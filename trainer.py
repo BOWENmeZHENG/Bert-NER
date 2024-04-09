@@ -6,6 +6,7 @@ from datetime import date
 import os
 import numpy as np
 import pandas as pd
+import json
 
 def train(model, tokenizer, train_json, test_json, classes, 
           n_data, batch_size, seed, max_length, class_weights: list, lr, n_epochs,
@@ -68,6 +69,13 @@ def train(model, tokenizer, train_json, test_json, classes,
             test_accuracies_np = np.array(test_accuracies)
             data = np.vstack((train_losses_np, train_accuracies_np, test_accuracies_np)).T
             data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy', 'test_accuracy'])
+            for sample_id, d in enumerate(data_list):
+                words_test = d['words']
+                labels_test = true_all[sample_id][:len(words_test)].tolist()
+                pred_test = pred_all[sample_id, :, :].max(dim=0)[1][:len(words_test)].tolist()
+                data_test_dict = {'words': words_test, 'labels': labels_test, 'pred': pred_test}
+                with open(f"saved_models/{model_name}_test_{sample_id}.json", 'w') as f_test:
+                    json.dump(data_test_dict, f_test)
         else:
             data = np.vstack((train_losses_np, train_accuracies_np)).T
             data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy'])
