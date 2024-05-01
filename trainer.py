@@ -24,12 +24,15 @@ def train(model, tokenizer, train_json, test_json, classes,
 
     train_losses = []
     train_accuracies = []
+    train_precisions, train_recalls, train_f1s = [], [], []
     if test_json != None:
         test_accuracies = []
+        test_precisions, test_recalls, test_f1s = [], [], []
     for epoch in range(n_epochs):
         epoch += 1
         train_loss_batch = []
         train_accuracy_batch = []
+        train_precision_batch, train_recall_batch, train_f1_batch = [], [], []
         for b, X in enumerate(data_batches):
             y_pred = model(X, attention_mask=att_mask_batches[b])
             y_pred = torch.swapaxes(y_pred, 1, 2)
@@ -37,6 +40,7 @@ def train(model, tokenizer, train_json, test_json, classes,
             
             loss = criterion(y_pred, y)
             acc, *_ = ut.accuracy(0, len(classes), y_pred, y)
+            precision, recall, f1 = ut.scores(0, len(classes), y_pred, y)
 
             optimizer.zero_grad()
             loss.backward()
@@ -44,19 +48,38 @@ def train(model, tokenizer, train_json, test_json, classes,
             
             train_loss_batch.append(loss.item())
             train_accuracy_batch.append(acc)
+            train_precision_batch.append(precision)
+            train_recall_batch.append(recall)
+            train_f1_batch.append(f1)
         
         train_loss_batch_mean = sum(train_loss_batch) / len(train_loss_batch)
         train_accuracy_batch_mean = sum(train_accuracy_batch) / len(train_accuracy_batch)
+        train_precision_batch_mean = sum(train_precision_batch) / len(train_precision_batch)
+        train_recall_batch_mean = sum(train_recall_batch) / len(train_recall_batch)
+        train_f1_batch_mean = sum(train_f1_batch) / len(train_f1_batch)
         print(f'Epoch {epoch}')    
         print(f'Mean training loss: {train_loss_batch_mean:.4f}')
         print(f'Mean training accuracy: {train_accuracy_batch_mean:.4f}')
+        print(f'Mean training precision: {train_precision_batch_mean:.4f}')
+        print(f'Mean training recall: {train_recall_batch_mean:.4f}')
+        print(f'Mean training f1: {train_f1_batch_mean:.4f}')
         if test_json != None:
-            acc_test, pred_classes, true_classes, pred_all, true_all, data_list = testing(model, test_json, classes, tokenizer, max_length)
+            precision_test, recall_test, f1_test, acc_test, pred_classes, true_classes, pred_all, true_all, data_list = testing(model, test_json, classes, tokenizer, max_length)
             test_accuracies.append(acc_test)
+            test_precisions.append(precision_test)
+            test_recalls.append(recall_test)
+            test_f1s.append(f1_test)
+            
             print(f'Mean test accuracy: {acc_test:.4f}')
+            print(f'Mean test precision: {precision_test:.4f}')
+            print(f'Mean test recall: {recall_test:.4f}')
+            print(f'Mean test f1: {f1_test:.4f}')
         print('\n')
         train_losses.append(train_loss_batch_mean)
         train_accuracies.append(train_accuracy_batch_mean)
+        train_precisions.append(train_precision_batch_mean)
+        train_recalls.append(train_recall_batch_mean)
+        train_f1s.append(train_f1_batch_mean)
 
         model_name = f'{folder}/{folder}_e_{epoch}'
         if save_model:             
@@ -72,14 +95,22 @@ def train(model, tokenizer, train_json, test_json, classes,
     if save_results:
         train_losses_np = np.array(train_losses)
         train_accuracies_np = np.array(train_accuracies)
+        train_precisions_np = np.array(train_precisions)
+        train_recalls_np = np.array(train_recalls)
+        train_f1s_np = np.array(train_f1s)
         if test_json != None:
             test_accuracies_np = np.array(test_accuracies)
-            data = np.vstack((train_losses_np, train_accuracies_np, test_accuracies_np)).T
-            data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy', 'test_accuracy'])
+            test_precisions_np = np.array(test_precisions)
+            test_recalls_np = np.array(test_recalls)
+            test_f1s_np = np.array(test_f1s)
+            data = np.vstack((train_losses_np, train_accuracies_np, train_precisions_np, train_recalls_np, train_f1s_np,
+                              test_accuracies_np, test_precisions_np, test_recalls_np, test_f1s_np)).T
+            data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy', 'train_precision', 'train_recall', 'train_f1',
+                                  'test_accuracy', 'test_precision', 'test_recall', 'test_f1'])
             
         else:
-            data = np.vstack((train_losses_np, train_accuracies_np)).T
-            data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy'])
+            data = np.vstack((train_losses_np, train_accuracies_np, train_precisions_np, train_recalls_np, train_f1s_np)).T
+            data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy', 'train_precision', 'train_recall', 'train_f1'])
         data_df.to_csv(f'saved_models/{folder}/results.csv', index=False)
     
     if plot:
@@ -90,17 +121,17 @@ def train(model, tokenizer, train_json, test_json, classes,
         ax1.legend(fontsize=12)
         ax1.set_ylabel("loss", fontsize=12)
 
-        ax2.plot(range(1, n_epochs + 1), train_accuracies, 'o-', c='blue', label='training')
+        ax2.plot(range(1, n_epochs + 1), train_f1s, 'o-', c='blue', label='training')
         if test_json != None:
-            ax2.plot(range(1, n_epochs + 1), test_accuracies, 'o-', c='green', label='test')
+            ax2.plot(range(1, n_epochs + 1), test_f1s, 'o-', c='green', label='test')
         ax2.legend(fontsize=12)
         ax2.set_xlabel("epoch", fontsize=12)
-        ax2.set_ylabel("accuracy", fontsize=12)
+        ax2.set_ylabel("F1 score", fontsize=12)
 
         plt.show()
 
     if test_json != None:
-        return model, train_losses, train_accuracies, test_accuracies, pred_classes, true_classes, pred_all, true_all, data_list
+        return model, train_losses, train_accuracies, precision_test, recall_test, f1_test, test_accuracies, pred_classes, true_classes, pred_all, true_all, data_list
     else:
         return model, train_losses, train_accuracies
 
@@ -111,5 +142,5 @@ def testing(model, json_file, classes, tokenizer, max_length):
         y_pred_test = model(data_test, attention_mask=att_mask_test)
         y_pred_test = torch.swapaxes(y_pred_test, 1, 2)
         acc_test, predicted_classes, true_classes = ut.accuracy(0, len(classes), y_pred_test, target_test)
-        # print(len(predicted_classes), len(true_classes))
-    return acc_test, predicted_classes, true_classes, y_pred_test, target_test, data_list
+        precision_test, recall_test, f1_test = ut.scores(0, len(classes), y_pred_test, target_test)
+    return precision_test, recall_test, f1_test, acc_test, predicted_classes, true_classes, y_pred_test, target_test, data_list
