@@ -114,19 +114,31 @@ def train(model, tokenizer, train_json, test_json, classes,
         data_df.to_csv(f'saved_models/{folder}/results.csv', index=False)
     
     if plot:
-        fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(4, 4))
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharex=True, figsize=(4, 8))
         fig.tight_layout()
 
         ax1.plot(range(1, n_epochs + 1), train_losses, 'o-', c='red', label='training')
         ax1.legend(fontsize=12)
         ax1.set_ylabel("loss", fontsize=12)
 
-        ax2.plot(range(1, n_epochs + 1), train_f1s, 'o-', c='blue', label='training')
+        ax2.plot(range(1, n_epochs + 1), train_precisions, 'o-', c='blue', label='training')
         if test_json != None:
-            ax2.plot(range(1, n_epochs + 1), test_f1s, 'o-', c='green', label='test')
+            ax2.plot(range(1, n_epochs + 1), test_precisions, 'o-', c='green', label='test')
         ax2.legend(fontsize=12)
-        ax2.set_xlabel("epoch", fontsize=12)
-        ax2.set_ylabel("F1 score", fontsize=12)
+        ax2.set_ylabel("precision", fontsize=12)
+
+        ax3.plot(range(1, n_epochs + 1), train_recalls, 'o-', c='blue', label='training')
+        if test_json != None:
+            ax3.plot(range(1, n_epochs + 1), test_recalls, 'o-', c='green', label='test')
+        ax3.legend(fontsize=12)
+        ax3.set_ylabel("recall", fontsize=12)
+
+        ax4.plot(range(1, n_epochs + 1), train_f1s, 'o-', c='blue', label='training')
+        if test_json != None:
+            ax4.plot(range(1, n_epochs + 1), test_f1s, 'o-', c='green', label='test')
+        ax4.legend(fontsize=12)
+        ax4.set_xlabel("epoch", fontsize=12)
+        ax4.set_ylabel("F1 score", fontsize=12)
 
         plt.show()
 
